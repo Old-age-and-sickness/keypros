@@ -211,7 +211,7 @@ git commit -m "chore: add supabase client"
 ## Project Structure
 
 작업할 때 파일 위치는 아래 구조를 기준으로 맞춰주세요.
-
+```text
 src/
 ├── app/
 │   ├── login/
