@@ -208,3 +208,44 @@ git commit -m "chore: add supabase client"
 7. 수입/비용 입력 화면 구현
 8. 정산 결과 화면 구현
 9. 의결 화면 구현
+## Project Structure
+
+작업할 때 파일 위치는 위 구조를 기준으로 맞춰주세요.
+
+예시:
+- 로그인 화면 작업 → src/app/login/page.tsx
+- 대시보드 작업 → src/app/dashboard/page.tsx
+- 자산 카드 컴포넌트 → src/components/property/
+- 의결 카드 컴포넌트 → src/components/vote/
+- mock 데이터 → src/data/mockData.ts
+- 정산/의결 계산 함수 → src/utils/
+src/
+├── app/
+│   ├── login/
+│   │   └── page.tsx              # /login 로그인 화면
+│   ├── dashboard/
+│   │   └── page.tsx              # /dashboard 대시보드 화면
+│   ├── properties/
+│   │   ├── page.tsx              # /properties 자산 목록 화면
+│   │   └── [id]/
+│   │       └── page.tsx          # /properties/:id 자산 상세 화면
+│   ├── votes/
+│   │   └── page.tsx              # /votes 의결 목록/화면
+│   └── layout.tsx                # 전체 공통 레이아웃
+│
+├── components/
+│   ├── common/                   # 버튼, 입력창, 카드 등 공통 UI
+│   ├── layout/                   # Header, Sidebar 등 레이아웃 UI
+│   ├── property/                 # 자산 관련 컴포넌트
+│   └── vote/                     # 의결 관련 컴포넌트
+│
+├── lib/
+│   └── supabase.ts               # Supabase 연결 설정
+│
+├── data/
+│   └── mockData.ts               # DB 연결 전 임시 데이터
+│
+├── types/
+│   └── index.ts                  # TypeScript 타입 정의
+│
+└── utils/                        # 정산 계산, 의결 계산 등 공통 함수
