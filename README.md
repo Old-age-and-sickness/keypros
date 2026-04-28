@@ -210,15 +210,8 @@ git commit -m "chore: add supabase client"
 9. 의결 화면 구현
 ## Project Structure
 
-작업할 때 파일 위치는 위 구조를 기준으로 맞춰주세요.
+작업할 때 파일 위치는 아래 구조를 기준으로 맞춰주세요.
 
-예시:
-- 로그인 화면 작업 → src/app/login/page.tsx
-- 대시보드 작업 → src/app/dashboard/page.tsx
-- 자산 카드 컴포넌트 → src/components/property/
-- 의결 카드 컴포넌트 → src/components/vote/
-- mock 데이터 → src/data/mockData.ts
-- 정산/의결 계산 함수 → src/utils/
 src/
 ├── app/
 │   ├── login/
@@ -249,3 +242,26 @@ src/
 │   └── index.ts                  # TypeScript 타입 정의
 │
 └── utils/                        # 정산 계산, 의결 계산 등 공통 함수
+```
+
+### Folder Guide
+
+- `src/app`: Next.js 페이지와 라우팅을 관리합니다.
+- `src/components`: 재사용 가능한 UI 컴포넌트를 관리합니다.
+- `src/lib`: Supabase 등 외부 서비스 연결 파일을 관리합니다.
+- `src/data`: DB 연결 전 임시 데이터를 관리합니다.
+- `src/types`: TypeScript 타입 정의를 관리합니다.
+- `src/utils`: 정산 계산, 의결 계산 등 공통 함수를 관리합니다.
+
+### Work Location Guide
+
+- 로그인 화면 작업: `src/app/login/page.tsx`
+- 대시보드 작업: `src/app/dashboard/page.tsx`
+- 자산 목록 화면 작업: `src/app/properties/page.tsx`
+- 자산 상세 화면 작업: `src/app/properties/[id]/page.tsx`
+- 의결 화면 작업: `src/app/votes/page.tsx`
+- 공통 버튼/입력창/카드 작업: `src/components/common/`
+- 자산 관련 컴포넌트 작업: `src/components/property/`
+- 의결 관련 컴포넌트 작업: `src/components/vote/`
+- Mock 데이터 작업: `src/data/mockData.ts`
+- 정산/의결 계산 함수 작업: `src/utils/`
