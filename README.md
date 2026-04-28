@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KeyPROS MVP
+
+공동 임대사업자의 수입, 비용, 정산, 의결 관리를 위한 웹 SaaS MVP입니다.
+
+## Tech Stack
+
+- Next.js
+- TypeScript
+- Tailwind CSS
+- Supabase
+- Vercel
+- GitHub
+- Node.js LTS
+
+## Branch Rule
+
+- main: 배포용
+- dev: 개발 통합용
+- feature/*: 기능 개발용
+
+## Commit Convention
+
+- feat: 기능 추가
+- fix: 버그 수정
+- docs: 문서 수정
+- style: 디자인/스타일 수정
+- refactor: 코드 구조 개선
+- chore: 설정 변경
 
 ## Getting Started
 
-First, run the development server:
+프로젝트를 처음 받은 팀원은 아래 순서로 실행합니다.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+실행 후 브라우저에서 아래 주소로 접속합니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Variables
 
-## Learn More
+프로젝트 루트 경로에 `.env.local` 파일을 생성하고 아래 값을 입력합니다.
 
-To learn more about Next.js, take a look at the following resources:
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+주의사항:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `.env.local` 파일은 GitHub에 올리지 않습니다.
+- 실제 환경변수 값은 팀 내부에서 별도로 공유합니다.
+- Supabase `service_role key`는 절대 GitHub에 올리지 않습니다.
+- GitHub에는 실제 값이 없는 `.env.example` 파일만 올릴 수 있습니다.
 
-## Deploy on Vercel
+## GitHub Collaboration Rule
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. main 브랜치에는 직접 push하지 않는다.
+2. 모든 작업은 dev에서 새 feature 브랜치를 만들어 진행한다.
+3. 작업 전에는 항상 dev 최신 코드를 pull한다.
+4. 기능 단위로 commit한다.
+5. 작업 완료 후 feature 브랜치를 GitHub에 push한다.
+6. Pull Request는 feature 브랜치에서 dev 브랜치로 보낸다.
+7. PR merge 전 `npm run dev`로 실행 확인한다.
+8. `.env.local` 파일은 GitHub에 올리지 않는다.
+9. Supabase `service_role key`는 절대 공유하거나 업로드하지 않는다.
+10. 충돌이 생기면 혼자 억지로 해결하지 말고 팀에 공유한다.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Status
+
+현재 단계: MVP 초기 개발 환경 세팅
