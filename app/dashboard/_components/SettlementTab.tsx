@@ -34,13 +34,17 @@ export default function SettlementTab() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.from('properties').select('id, name').eq('status', 'ACTIVE').order('name')
-      .then(({ data }) => {
+    const load = async () => {
+      try {
+        const { data } = await supabase.from('properties').select('id, name').eq('status', 'ACTIVE').order('name')
         const props = (data ?? []) as Property[]
         setProperties(props)
         if (props.length > 0) setSelectedPropId(props[0].id)
+      } finally {
         setLoading(false)
-      }).catch(() => setLoading(false))
+      }
+    }
+    load()
   }, [])
 
   useEffect(() => {
