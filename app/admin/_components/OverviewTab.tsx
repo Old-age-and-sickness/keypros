@@ -70,6 +70,8 @@ export default function OverviewTab({
       setPendingReqs(pendingList)
       onPendingCount(pending.count ?? 0)
       setLoading(false)
+    }).catch(() => {
+      setLoading(false)
     })
   }, [onPendingCount])
 

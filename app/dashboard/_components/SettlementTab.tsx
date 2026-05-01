@@ -40,7 +40,7 @@ export default function SettlementTab() {
         setProperties(props)
         if (props.length > 0) setSelectedPropId(props[0].id)
         setLoading(false)
-      })
+      }).catch(() => setLoading(false))
   }, [])
 
   useEffect(() => {

@@ -54,7 +54,7 @@ export default function AdminVotesTab() {
       })
       setRecords(map)
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [])
 
   if (loading) return (

@@ -66,7 +66,7 @@ export default function VotesTab() {
             setRecords(map)
           })
       }
-    })
+    }).catch(() => setLoading(false))
   }, [user])
 
   if (loading) return (

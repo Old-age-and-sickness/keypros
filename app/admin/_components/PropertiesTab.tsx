@@ -69,7 +69,7 @@ export default function PropertiesTab() {
       })
       setUnitsMap(uMap)
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [])
 
   if (loading) return (

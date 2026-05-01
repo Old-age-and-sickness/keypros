@@ -53,7 +53,7 @@ export default function AssetOverviewTab() {
       ;(mems ?? []).forEach((m: Membership) => map.set(m.property_id, m))
       setMemberships(map)
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [user])
 
   if (loading) return (
