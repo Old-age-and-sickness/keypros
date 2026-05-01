@@ -43,26 +43,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    let initialized = false
+    let mounted = true
+
+    const init = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!mounted) return
+        setUser(session?.user ?? null)
+        if (session?.user) await loadProfile(session.user.id)
+        else setProfile(null)
+      } catch {
+        // ignore
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    init()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          setUser(session?.user ?? null)
-          if (session?.user) await loadProfile(session.user.id)
-          else setProfile(null)
-        } catch {
-          // ignore
-        } finally {
-          if (!initialized || event === 'SIGNED_OUT') {
-            initialized = true
-            setLoading(false)
-          }
+      async (_event, session) => {
+        if (!mounted) return
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          try { await loadProfile(session.user.id) } catch {}
+        } else {
+          setProfile(null)
         }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const refreshProfile = async () => {
