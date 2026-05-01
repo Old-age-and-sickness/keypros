@@ -74,7 +74,7 @@ export default function RequestAccessPage() {
     supabase
       .from('permission_requests').select('*').eq('user_id', user.id)
       .order('requested_at', { ascending: false }).limit(1).maybeSingle()
-      .then(({ data }) => setExisting(data as PermissionRequest | null))
+      .then(({ data }) => setExisting(data as PermissionRequest | null), () => setExisting(null))
   }, [loading, user, profile, router])
 
   const handleSubmit = async () => {
