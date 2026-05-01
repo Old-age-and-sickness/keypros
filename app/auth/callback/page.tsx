@@ -23,7 +23,7 @@ function CallbackHandler() {
 
       const role = profileData?.role ?? 'GUEST'
       if (role === 'ADMIN') {
-        router.replace('/admin/requests')
+        router.replace('/admin')
       } else if (role === 'GUEST') {
         router.replace('/request-access')
       } else {
