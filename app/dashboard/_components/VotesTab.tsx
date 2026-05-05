@@ -96,7 +96,7 @@ export default function VotesTab() {
   }
 
   const handleSubmit = async () => {
-    if (!form.property_id || !form.title) return
+    if (!form.property_id || !form.title || !user) return
     setSubmitting(true)
     setSubmitError(null)
     const { error } = await supabase.from('votes').insert({
