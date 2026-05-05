@@ -46,6 +46,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true
 
     const init = async () => {
+      const timeout = setTimeout(() => {
+        if (mounted) setLoading(false)
+      }, 5000)
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (!mounted) return
@@ -55,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {
         // ignore
       } finally {
+        clearTimeout(timeout)
         if (mounted) setLoading(false)
       }
     }

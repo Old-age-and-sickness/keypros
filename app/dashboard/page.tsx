@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/src/context/AuthContext'
 import AssetOverviewTab from './_components/AssetOverviewTab'
 import BuildingDetailTab from './_components/BuildingDetailTab'
@@ -41,8 +42,25 @@ type TabId = typeof TABS[number]['id']
 
 export default function DashboardPage() {
   const [tab, setTab] = useState<TabId>('overview')
-  const { profile, signOut } = useAuth()
+  const { user, profile, loading, signOut } = useAuth()
+  const router = useRouter()
   const initials = profile?.name ? profile.name.slice(0, 2) : '?'
+
+  useEffect(() => {
+    if (!loading && !user) router.replace('/login')
+  }, [loading, user, router])
+
+  if (loading || !user) return (
+    <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="flex items-center gap-2 text-slate-400 text-sm">
+        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+        불러오는 중...
+      </div>
+    </div>
+  )
 
   return (
     <div className="flex flex-col h-screen bg-slate-50">
