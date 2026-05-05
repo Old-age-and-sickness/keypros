@@ -55,15 +55,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return
 
         if (event === 'INITIAL_SESSION') {
-          // localStorage에서 즉시 읽음 — 네트워크 요청 없음
           clearTimeout(timeout)
-          setUser(session?.user ?? null)
-          setLoading(false)  // UI 즉시 언블록
-          if (session?.user) {
-            try { await loadProfile(session.user.id) } catch {}
-          } else {
+
+          if (!session?.user) {
+            setUser(null)
             setProfile(null)
+            setLoading(false)
+            return
           }
+
+          // 토큰 만료 여부 확인
+          const isExpired = session.expires_at
+            ? session.expires_at * 1000 < Date.now()
+            : false
+
+          if (isExpired) {
+            // 만료됐으면 조용히 로그아웃 → dashboard auth guard가 /login으로 redirect
+            setUser(null)
+            setProfile(null)
+            setLoading(false)
+            supabase.auth.signOut().catch(() => {})
+            return
+          }
+
+          // 유효한 토큰 → 즉시 UI 언블록 후 프로필 로드
+          setUser(session.user)
+          setLoading(false)
+          try { await loadProfile(session.user.id) } catch {}
+          return
+        }
+
+        if (event === 'TOKEN_REFRESHED') {
+          if (!session?.user) return
+          setUser(session.user)
+          try { await loadProfile(session.user.id) } catch {}
           return
         }
 
