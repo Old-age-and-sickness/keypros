@@ -45,34 +45,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true
 
-    const init = async () => {
-      const timeout = setTimeout(() => {
-        if (mounted) setLoading(false)
-      }, 5000)
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!mounted) return
-        setUser(session?.user ?? null)
-        if (session?.user) await loadProfile(session.user.id)
-        else setProfile(null)
-      } catch {
-        // ignore
-      } finally {
-        clearTimeout(timeout)
-        if (mounted) setLoading(false)
-      }
-    }
-
-    init()
+    // 안전망: INITIAL_SESSION이 3초 내에 안 오면 강제 해제
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false)
+    }, 3000)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return
+
+        if (event === 'INITIAL_SESSION') {
+          // localStorage에서 즉시 읽음 — 네트워크 요청 없음
+          clearTimeout(timeout)
+          setUser(session?.user ?? null)
+          setLoading(false)  // UI 즉시 언블록
+          if (session?.user) {
+            try { await loadProfile(session.user.id) } catch {}
+          } else {
+            setProfile(null)
+          }
+          return
+        }
+
         if (event === 'SIGNED_OUT') {
           setUser(null)
           setProfile(null)
           return
         }
+
         if (!session?.user) return
         setUser(session.user)
         try { await loadProfile(session.user.id) } catch {}
@@ -81,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false
+      clearTimeout(timeout)
       subscription.unsubscribe()
     }
   }, [])
