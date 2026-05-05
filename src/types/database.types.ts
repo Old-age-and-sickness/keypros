@@ -86,3 +86,24 @@ export type Database = {
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type PermissionRequest = Database['public']['Tables']['permission_requests']['Row']
+
+export type PropertyRegistrationRequest = {
+  id: string
+  requested_by: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  reject_reason: string | null
+  name: string
+  address: string
+  asset_type: string
+  acquisition_price: number
+  acquisition_date: string
+  total_area_sqm: number | null
+  floors_above: number | null
+  floors_below: number | null
+  settlement_cycle: string
+  purpose: string | null
+  rental_units: object[]
+  requested_at: string
+  reviewed_at: string | null
+  reviewed_by: string | null
+}
