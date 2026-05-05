@@ -16,6 +16,7 @@ type VoteRecord = {
   ownership_ratio: number; voted_at: string
   property_members: { user_id: string; profiles: { name: string } | null } | null
 }
+type MyMembership = { id: string; ownership_ratio: number }
 type Property = { id: string; name: string }
 
 const RESULT_STYLE: Record<string, string> = {
@@ -45,9 +46,11 @@ export default function VotesTab() {
   const { user } = useAuth()
   const [votes, setVotes] = useState<Vote[]>([])
   const [records, setRecords] = useState<Map<string, VoteRecord[]>>(new Map())
-  const [myMemberIds, setMyMemberIds] = useState<Set<string>>(new Set())
+  // property_id → { memberId, ownershipRatio }
+  const [myMemberMap, setMyMemberMap] = useState<Map<string, MyMembership>>(new Map())
   const [expanded, setExpanded] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [voting, setVoting] = useState<string | null>(null) // vote_id currently being cast
 
   const [showModal, setShowModal] = useState(false)
   const [properties, setProperties] = useState<Property[]>([])
@@ -59,12 +62,19 @@ export default function VotesTab() {
     if (!user) return
     const [{ data: vData }, { data: mData }] = await Promise.all([
       supabase.from('votes').select('*, properties(name)').order('end_at', { ascending: false }),
-      supabase.from('property_members').select('id').eq('user_id', user.id).eq('status', 'ACTIVE'),
+      supabase.from('property_members')
+        .select('id, property_id, ownership_ratio')
+        .eq('user_id', user.id).eq('status', 'ACTIVE'),
     ])
     const list = (vData ?? []) as Vote[]
     setVotes(list)
     if (list.length > 0) setExpanded(prev => prev ?? list[0].id)
-    setMyMemberIds(new Set((mData ?? []).map((m: { id: string }) => m.id)))
+
+    const memberMap = new Map<string, MyMembership>()
+    ;(mData ?? []).forEach((m: { id: string; property_id: string; ownership_ratio: number }) => {
+      memberMap.set(m.property_id, { id: m.id, ownership_ratio: m.ownership_ratio })
+    })
+    setMyMemberMap(memberMap)
     setLoading(false)
 
     if (list.length > 0) {
@@ -85,6 +95,22 @@ export default function VotesTab() {
   useEffect(() => {
     fetchVotes().catch(() => setLoading(false))
   }, [user])
+
+  const myMemberIds = new Set(Array.from(myMemberMap.values()).map(m => m.id))
+
+  const castVote = async (vote: Vote, choice: 'AGREE' | 'DISAGREE' | 'ABSTAIN') => {
+    const membership = myMemberMap.get(vote.property_id)
+    if (!membership) return
+    setVoting(vote.id)
+    const { error } = await supabase.from('vote_records').insert({
+      vote_id: vote.id,
+      property_member_id: membership.id,
+      choice,
+      ownership_ratio: membership.ownership_ratio,
+    })
+    setVoting(null)
+    if (!error) await fetchVotes()
+  }
 
   const openModal = async () => {
     const { data } = await supabase
@@ -110,10 +136,7 @@ export default function VotesTab() {
       created_by: user.id,
     })
     setSubmitting(false)
-    if (error) {
-      setSubmitError(error.message)
-      return
-    }
+    if (error) { setSubmitError(error.message); return }
     setShowModal(false)
     setLoading(true)
     await fetchVotes()
@@ -129,7 +152,6 @@ export default function VotesTab() {
   return (
     <>
       <div className="flex flex-col gap-3">
-        {/* 상단 버튼 */}
         <div className="flex justify-end">
           <button
             onClick={openModal}
@@ -148,22 +170,23 @@ export default function VotesTab() {
           </div>
         ) : (
           votes.map(vote => {
-            const recs     = records.get(vote.id) ?? []
-            const isOpen   = expanded === vote.id
-            const myRecord = recs.find(r => myMemberIds.has(r.property_member_id))
+            const recs      = records.get(vote.id) ?? []
+            const isOpen    = expanded === vote.id
+            const myRecord  = recs.find(r => myMemberIds.has(r.property_member_id))
+            const canVote   = vote.result === 'PENDING' && !myRecord && myMemberMap.has(vote.property_id)
+            const isVoting  = voting === vote.id
 
             const totalWeight = recs.reduce((s, r) => s + Number(r.ownership_ratio), 0)
             const agreeW    = recs.filter(r => r.choice === 'AGREE').reduce((s, r) => s + Number(r.ownership_ratio), 0)
             const disagreeW = recs.filter(r => r.choice === 'DISAGREE').reduce((s, r) => s + Number(r.ownership_ratio), 0)
             const abstainW  = recs.filter(r => r.choice === 'ABSTAIN').reduce((s, r) => s + Number(r.ownership_ratio), 0)
             const base      = totalWeight || 1
-            const isPending = vote.result === 'PENDING'
 
             return (
               <div
                 key={vote.id}
                 className={`bg-white border rounded-2xl overflow-hidden shadow-sm transition-all ${
-                  isPending ? 'border-amber-200' : 'border-slate-200'
+                  vote.result === 'PENDING' ? 'border-amber-200' : 'border-slate-200'
                 }`}
               >
                 <div className={`h-0.5 w-full ${
@@ -191,6 +214,11 @@ export default function VotesTab() {
                           내 투표: {CHOICE_LABEL[myRecord.choice]}
                         </span>
                       )}
+                      {canVote && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100">
+                          투표 가능
+                        </span>
+                      )}
                     </div>
                     <div className="font-semibold text-slate-900 leading-snug">{vote.title}</div>
                     {vote.end_at && (
@@ -214,6 +242,35 @@ export default function VotesTab() {
                       <p className="text-sm text-slate-600 leading-relaxed bg-white rounded-xl border border-slate-100 px-4 py-3">
                         {vote.description}
                       </p>
+                    )}
+
+                    {/* 투표 버튼 */}
+                    {canVote && (
+                      <div className="bg-white rounded-xl border border-indigo-100 p-4">
+                        <div className="text-xs font-semibold text-slate-500 mb-3">의견을 선택하세요</div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(['AGREE', 'DISAGREE', 'ABSTAIN'] as const).map(choice => (
+                            <button
+                              key={choice}
+                              onClick={() => castVote(vote, choice)}
+                              disabled={isVoting}
+                              className={`py-2.5 rounded-xl border text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                                choice === 'AGREE'
+                                  ? 'border-emerald-200 text-emerald-600 hover:bg-emerald-50 active:bg-emerald-100'
+                                  : choice === 'DISAGREE'
+                                  ? 'border-rose-200 text-rose-500 hover:bg-rose-50 active:bg-rose-100'
+                                  : 'border-slate-200 text-slate-500 hover:bg-slate-50 active:bg-slate-100'
+                              }`}
+                            >
+                              {isVoting ? (
+                                <span className="flex items-center justify-center">
+                                  <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                </span>
+                              ) : CHOICE_LABEL[choice]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     )}
 
                     {recs.length > 0 && (
@@ -267,7 +324,6 @@ export default function VotesTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowModal(false)} />
           <div className="relative bg-white rounded-3xl shadow-xl w-full max-w-lg overflow-hidden">
-            {/* 모달 헤더 */}
             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-xl bg-indigo-50 flex items-center justify-center">
@@ -282,110 +338,73 @@ export default function VotesTab() {
               </button>
             </div>
 
-            {/* 모달 폼 */}
             <div className="px-6 py-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
-              {/* 자산 선택 */}
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">자산 <span className="text-rose-400">*</span></label>
-                <select
-                  value={form.property_id}
-                  onChange={e => setForm(f => ({...f, property_id: e.target.value}))}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition bg-white"
-                >
+                <select value={form.property_id} onChange={e => setForm(f => ({...f, property_id: e.target.value}))}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition bg-white">
                   <option value="">자산을 선택하세요</option>
-                  {properties.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
+                  {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
 
-              {/* 안건 제목 */}
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">안건 제목 <span className="text-rose-400">*</span></label>
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={e => setForm(f => ({...f, title: e.target.value}))}
+                <input type="text" value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))}
                   placeholder="예) 1층 임차인 월세 인상 건"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition"
-                />
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition" />
               </div>
 
-              {/* 안건 설명 */}
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">안건 설명</label>
-                <textarea
-                  value={form.description}
-                  onChange={e => setForm(f => ({...f, description: e.target.value}))}
-                  placeholder="안건에 대한 상세 내용을 입력하세요"
-                  rows={3}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition resize-none"
-                />
+                <textarea value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))}
+                  placeholder="안건에 대한 상세 내용을 입력하세요" rows={3}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition resize-none" />
               </div>
 
-              {/* 의결 방식 */}
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-2">의결 방식 <span className="text-rose-400">*</span></label>
                 <div className="grid grid-cols-3 gap-2">
                   {(['WEIGHTED', 'SIMPLE', 'UNANIMOUS'] as const).map(type => (
-                    <button
-                      key={type}
-                      onClick={() => setForm(f => ({...f, vote_type: type}))}
+                    <button key={type} onClick={() => setForm(f => ({...f, vote_type: type}))}
                       className={`py-2.5 rounded-xl border text-xs font-semibold transition-all ${
                         form.vote_type === type
                           ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
                           : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                      }`}
-                    >
+                      }`}>
                       {TYPE_LABEL[type]}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* 기간 */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1.5">시작일</label>
-                  <input
-                    type="date"
-                    value={form.start_at}
-                    onChange={e => setForm(f => ({...f, start_at: e.target.value}))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition"
-                  />
+                  <input type="date" value={form.start_at} onChange={e => setForm(f => ({...f, start_at: e.target.value}))}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1.5">마감일</label>
-                  <input
-                    type="date"
-                    value={form.end_at}
-                    onChange={e => setForm(f => ({...f, end_at: e.target.value}))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition"
-                  />
+                  <input type="date" value={form.end_at} onChange={e => setForm(f => ({...f, end_at: e.target.value}))}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition" />
                 </div>
               </div>
             </div>
 
-            {/* 에러 메시지 */}
             {submitError && (
-              <div className="mx-6 px-4 py-3 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-600">
+              <div className="mx-6 mb-2 px-4 py-3 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-600">
                 저장 실패: {submitError}
               </div>
             )}
 
-            {/* 모달 하단 버튼 */}
             <div className="px-6 py-4 border-t border-slate-100 flex gap-2.5">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-colors"
-              >
+              <button onClick={() => setShowModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-colors">
                 취소
               </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!form.property_id || !form.title || submitting}
-                className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
-              >
+              <button onClick={handleSubmit} disabled={!form.property_id || !form.title || submitting}
+                className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors">
                 {submitting ? (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
