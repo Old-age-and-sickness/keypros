@@ -64,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return
           }
 
-          // 만료됐거나 5분 이내 만료 예정이면 로그아웃
           const expiresMs = (session.expires_at ?? 0) * 1000
           const isExpiringSoon = expiresMs < Date.now() + 5 * 60 * 1000
 
@@ -72,20 +71,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(null)
             setProfile(null)
             setLoading(false)
+            // signOut는 await 하지 않음 — 핸들러 즉시 리턴해야 데드락 방지
             supabase.auth.signOut().catch(() => {})
             return
           }
 
           setUser(session.user)
           setLoading(false)
-          try { await loadProfile(session.user.id) } catch {}
-          return
-        }
-
-        if (event === 'TOKEN_REFRESHED') {
-          if (!session?.user) return
-          setUser(session.user)
-          try { await loadProfile(session.user.id) } catch {}
+          // loadProfile을 절대 await하지 않음
+          // INITIAL_SESSION 핸들러 안에서 await하면 initializePromise 데드락 발생
+          setTimeout(() => {
+            if (mounted) loadProfile(session.user.id).catch(() => {})
+          }, 0)
           return
         }
 
@@ -97,7 +94,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!session?.user) return
         setUser(session.user)
-        try { await loadProfile(session.user.id) } catch {}
+        // SIGNED_IN, TOKEN_REFRESHED 등은 initializePromise 완료 후 발생하므로 await 가능
+        loadProfile(session.user.id).catch(() => {})
       }
     )
 
