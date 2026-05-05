@@ -53,6 +53,7 @@ export default function VotesTab() {
   const [properties, setProperties] = useState<Property[]>([])
   const [form, setForm] = useState(emptyForm())
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const fetchVotes = async () => {
     if (!user) return
@@ -90,13 +91,15 @@ export default function VotesTab() {
       .from('properties').select('id, name').eq('status', 'ACTIVE').order('name')
     setProperties((data ?? []) as Property[])
     setForm(emptyForm())
+    setSubmitError(null)
     setShowModal(true)
   }
 
   const handleSubmit = async () => {
     if (!form.property_id || !form.title) return
     setSubmitting(true)
-    await supabase.from('votes').insert({
+    setSubmitError(null)
+    const { error } = await supabase.from('votes').insert({
       property_id: form.property_id,
       title: form.title,
       description: form.description || null,
@@ -106,6 +109,10 @@ export default function VotesTab() {
       end_at: form.end_at || null,
     })
     setSubmitting(false)
+    if (error) {
+      setSubmitError(error.message)
+      return
+    }
     setShowModal(false)
     setLoading(true)
     await fetchVotes()
@@ -357,6 +364,13 @@ export default function VotesTab() {
                 </div>
               </div>
             </div>
+
+            {/* 에러 메시지 */}
+            {submitError && (
+              <div className="mx-6 px-4 py-3 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-600">
+                저장 실패: {submitError}
+              </div>
+            )}
 
             {/* 모달 하단 버튼 */}
             <div className="px-6 py-4 border-t border-slate-100 flex gap-2.5">
