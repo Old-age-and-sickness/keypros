@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'INITIAL_SESSION') {
           clearTimeout(timeout)
+          console.log('[Auth] INITIAL_SESSION', { hasUser: !!session?.user, expiresAt: session?.expires_at, now: Math.floor(Date.now()/1000) })
 
           if (!session?.user) {
             setUser(null)
@@ -64,13 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return
           }
 
-          // 토큰 만료 여부 확인
           const isExpired = session.expires_at
             ? session.expires_at * 1000 < Date.now()
             : false
 
+          console.log('[Auth] isExpired:', isExpired)
+
           if (isExpired) {
-            // 만료됐으면 조용히 로그아웃 → dashboard auth guard가 /login으로 redirect
             setUser(null)
             setProfile(null)
             setLoading(false)
@@ -78,10 +79,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return
           }
 
-          // 유효한 토큰 → 즉시 UI 언블록 후 프로필 로드
           setUser(session.user)
           setLoading(false)
+          console.log('[Auth] setLoading(false) 완료, 프로필 로드 시작')
           try { await loadProfile(session.user.id) } catch {}
+          console.log('[Auth] 프로필 로드 완료')
           return
         }
 

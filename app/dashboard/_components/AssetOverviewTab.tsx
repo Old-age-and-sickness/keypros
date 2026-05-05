@@ -41,19 +41,21 @@ export default function AssetOverviewTab() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user) return
+    if (!user) { console.log('[AssetTab] user 없음, 스킵'); return }
+    console.log('[AssetTab] DB 쿼리 시작, user.id:', user.id)
     Promise.all([
       supabase.from('properties').select('*').eq('status', 'ACTIVE').order('name'),
       supabase.from('property_members')
         .select('property_id, role, ownership_ratio, investment_amount')
         .eq('user_id', user.id).eq('status', 'ACTIVE'),
-    ]).then(([{ data: props }, { data: mems }]) => {
+    ]).then(([{ data: props, error: e1 }, { data: mems, error: e2 }]) => {
+      console.log('[AssetTab] 쿼리 완료', { props: props?.length, mems: mems?.length, e1, e2 })
       setProperties((props ?? []) as Property[])
       const map = new Map<string, Membership>()
       ;(mems ?? []).forEach((m: Membership) => map.set(m.property_id, m))
       setMemberships(map)
       setLoading(false)
-    }).catch(() => setLoading(false))
+    }).catch((err) => { console.log('[AssetTab] 쿼리 에러:', err); setLoading(false) })
   }, [user])
 
   if (loading) return (
