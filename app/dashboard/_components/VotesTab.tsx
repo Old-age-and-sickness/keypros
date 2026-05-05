@@ -107,6 +107,7 @@ export default function VotesTab() {
       result: 'PENDING',
       start_at: form.start_at || null,
       end_at: form.end_at || null,
+      created_by: user.id,
     })
     setSubmitting(false)
     if (error) {
