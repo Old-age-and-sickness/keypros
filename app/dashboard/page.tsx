@@ -108,7 +108,7 @@ export default function DashboardPage() {
               </button>
             ))}
             <Link
-              href="/register"
+              href="/register/step/1"
               className="flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-all"
             >
               <span className="text-slate-400">
