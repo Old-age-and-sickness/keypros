@@ -14,6 +14,11 @@ export type Owner = {
   is_representative: boolean
 }
 
+export type RegistryShare = {
+  name: string
+  ratio: string
+}
+
 export type RegisterFormData = {
   // Step 1
   asset_type: AssetType
@@ -21,7 +26,9 @@ export type RegisterFormData = {
   // Step 2
   registry_file: File | null
   registry_address: string
+  registry_building: string
   registry_owner: string
+  registry_shares: RegistryShare[]
   verify_status: VerifyStatus
   // Step 3
   asset_name: string
@@ -44,7 +51,9 @@ const initialForm: RegisterFormData = {
   purpose: 'CO_OWNERSHIP',
   registry_file: null,
   registry_address: '',
+  registry_building: '',
   registry_owner: '',
+  registry_shares: [],
   verify_status: 'IDLE',
   asset_name: '',
   address: '',
