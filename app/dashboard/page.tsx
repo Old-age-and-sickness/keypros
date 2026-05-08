@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { useAuth } from '@/src/context/AuthContext'
 import AssetOverviewTab from './_components/AssetOverviewTab'
 import BuildingDetailTab from './_components/BuildingDetailTab'
@@ -107,8 +106,8 @@ export default function DashboardPage() {
                 {t.label}
               </button>
             ))}
-            <Link
-              href="/register/step/1"
+            <button
+              onClick={() => router.push('/register/step/1')}
               className="flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-all"
             >
               <span className="text-slate-400">
@@ -117,7 +116,7 @@ export default function DashboardPage() {
                 </svg>
               </span>
               자산등록
-            </Link>
+            </button>
           </nav>
         </div>
       </header>

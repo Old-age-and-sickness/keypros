@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/src/context/AuthContext'
 import StepIndicator from '../../_components/StepIndicator'
 import Step1 from '../../_components/Step1'
 import Step2 from '../../_components/Step2'
@@ -26,7 +28,24 @@ const STEP_COMPONENTS: Record<number, React.ComponentType> = {
 
 export default function RegisterStepClient({ step }: { step: number }) {
   const router = useRouter()
+  const { user, loading } = useAuth()
   const StepComponent = STEP_COMPONENTS[step]
+
+  useEffect(() => {
+    if (!loading && !user) router.replace('/login')
+  }, [loading, user, router])
+
+  if (loading || !user) return (
+    <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="flex items-center gap-2 text-slate-400 text-sm">
+        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+        불러오는 중...
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-slate-50">
