@@ -106,17 +106,19 @@ export default function DashboardPage() {
                 {t.label}
               </button>
             ))}
-            <button
-              onClick={() => router.push('/register/step/1')}
-              className="flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-all"
-            >
-              <span className="text-slate-400">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 5v14M5 12h14"/>
-                </svg>
-              </span>
-              자산등록
-            </button>
+            {profile?.role !== 'ADMIN' && (
+              <button
+                onClick={() => router.push('/register/step/1')}
+                className="flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-all"
+              >
+                <span className="text-slate-400">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                </span>
+                자산등록
+              </button>
+            )}
           </nav>
         </div>
       </header>
