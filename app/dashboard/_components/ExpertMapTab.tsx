@@ -49,12 +49,15 @@ export default function ExpertMapTab() {
 
   useEffect(() => {
     if (!user) return
-    supabase.from('properties').select('id, name, address').eq('status', 'ACTIVE')
-      .then(({ data }) => {
+    const load = async () => {
+      try {
+        const { data } = await supabase.from('properties').select('id, name, address').eq('status', 'ACTIVE')
         setProperties((data ?? []) as Property[])
+      } finally {
         setLoading(false)
-      })
-      .catch(() => setLoading(false))
+      }
+    }
+    load()
   }, [user])
 
   // Load Kakao Maps SDK
